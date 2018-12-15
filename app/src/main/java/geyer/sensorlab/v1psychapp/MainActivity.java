@@ -1,7 +1,10 @@
 package geyer.sensorlab.v1psychapp;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -12,9 +15,12 @@ import android.support.v4.content.FileProvider;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.Editable;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -31,6 +37,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     ProgressBar progressBar;
 
     SharedPreferences prefs;
+    SharedPreferences.Editor editor;
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
@@ -46,6 +53,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void initializeComponents() {
         prefs = getSharedPreferences("app initialization prefs", MODE_PRIVATE);
+        editor = prefs.edit();
+        editor.apply();
     }
 
     private void initializeButton() {
@@ -159,10 +168,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     private void promptAction(int i) {
         switch (i){
+            //inform user
+            case 1:
+                informUser();
+                break;
+                /*
+                document apps
             case 3:
                 docApps.execute(getApplicationContext(), this);
+                break;
+                */
+            case 2:
+                requestPassword();
+                break;
+            case 7:
+                startLoggingData();
+                break;
+            case 11:
+                informServiceIsRunning();
                 break;
             default:
                 Log.i("result", String.valueOf(i));
@@ -170,10 +196,100 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    private void informUser() {
+        StringBuilder msg = dai.buildMessageToInformUser();
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        builder.setTitle("usage app")
+                .setMessage(msg)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        editor.putBoolean("instructions shown", true)
+                                .apply();
+                        promptAction(dai.detectState());
+                    }
+                }).setNegativeButton("View privacy policy", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Uri uri = Uri.parse("https://psychsensorlab.com/privacy-agreement-for-apps/");
+                Intent launchBrowser = new Intent(Intent.ACTION_VIEW, uri);
+                startActivityForResult(launchBrowser, Constants.SHOW_PRIVACY_POLICY);
+            }
+        });
+        builder.create()
+                .show();
+    }
+
+    private void requestPassword() {
+        LayoutInflater inflater = this.getLayoutInflater();
+        //create dialog
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        builder.setTitle("password")
+                .setMessage("Please specify a password that is 6 characters in length. This can include letters and/or numbers.")
+                .setView(inflater.inflate(R.layout.password_alert_dialog, null))
+                .setNeutralButton("OK", new DialogInterface.OnClickListener() {
+                    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        Dialog d = (Dialog) dialogInterface;
+                        EditText password = d.findViewById(R.id.etPassword);
+                        if (checkPassword(password.getText())) {
+                            editor.putBoolean("password generated", true);
+                            editor.putString("password", String.valueOf(password.getText()));
+                            editor.putString("pdfPassword", String.valueOf(password.getText()));
+                            editor.apply();
+                            promptAction(dai.detectState());
+                        } else {
+                            requestPassword();
+                            Toast.makeText(MainActivity.this, "The password entered was not long enough", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    private boolean checkPassword(Editable text) {
+                        return text.length() > 5;
+                    }
+                });
+        builder.create()
+                .show();
+    }
+
+    private void startLoggingData() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            startService(new Intent(this, logger.class));
+        }else{
+            startForegroundService(new Intent(this, logger.class));
+            }
+        }
+
+    private void informServiceIsRunning() {
+
+    }
+
+
     @Override
-    public void processFinish(Boolean output) {
-        if(output){
-            Toast.makeText(this, "works", Toast.LENGTH_SHORT).show();
+    public void processFinish(Integer output) {
+        switch (output){
+            //log finished documenting apps
+            case 1:
+
+                break;
+            //problem logging apps
+            case 2:
+
+                break;
+            //finished packaging screen logging successfully
+            case 3:
+
+                break;
+            //failed to package screen logging data
+            case 4:
+
+                break;
         }
     }
 }

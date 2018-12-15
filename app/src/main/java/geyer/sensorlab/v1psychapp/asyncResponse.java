@@ -1,5 +1,5 @@
 package geyer.sensorlab.v1psychapp;
 
 public interface asyncResponse  {
-    void processFinish(Boolean output);
+    void processFinish(Integer output);
 }

@@ -27,6 +27,8 @@ dependencies {
     implementation 'com.itextpdf:itextg:5.5.10'
     //supports background processes
     implementation 'ch.dissem.jabit:jabit-cryptography-spongy:2.0.4'
+    //sqlCypher
+    implementation 'net.zetetic:android-database-sqlcipher:3.5.9@aar'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 }

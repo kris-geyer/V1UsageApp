@@ -199,4 +199,51 @@ class DirectApplicationInitialization {
     public void directState(int state) {
 
     }
+
+
+    public StringBuilder buildMessageToInformUser() {
+        StringBuilder toRelay = new StringBuilder();
+        toRelay.append("This app is intended to relay information about how much you use this smartphone" +"\n").
+                append("\n").append("This app functions by ");
+        if(prospectiveLoggingEmployed && !retrospectiveLoggingEmployed){
+            toRelay.append("documenting how you use your phone by running a program in the background. ");
+        }else if (!prospectiveLoggingEmployed && retrospectiveLoggingEmployed){
+            toRelay.append("querying a database stored by android phones about what you have used your phone for previously. ");
+        }else if(prospectiveLoggingEmployed && retrospectiveLoggingEmployed){
+            toRelay.append("querying a database stored by android phones about what you have used your phone for previously and documenting how you use your phone by running a program in the background. ");
+        }
+        if(prospectiveLoggingEmployed){
+            if(requestUsagePermission && !requestNotificationPermission){
+                toRelay.append("What you use your smartphone for will be documented. ");
+            }else if(!requestUsagePermission && requestNotificationPermission){
+                toRelay.append("What notifications appear and which app called them will be documented as well as when you deleted them. ");
+            }else if(requestUsagePermission && requestNotificationPermission){
+                toRelay.append("What you use your smartphone for will be documented and ehat notifications appear and which app called them will be documented as well as when you deleted them. ");
+            }
+
+        }
+
+        if(performCrossSectionalAnalysis){
+            toRelay.append("The app will also seek to generate context by identify the current state of your phone. ");
+                    switch (levelOfCrossSectionalAnalysis){
+                        case 1:
+                            toRelay.append("What apps are installed on your phone will be documented. ");
+                            break;
+                        case 2:
+                            toRelay.append("What permissions are requested by the apps on your phone will be documented and your if you have granted this permission on not. ");
+                            break;
+                        case 3:
+                            toRelay.append("What apps are installed on your phone will be documented as well as what permissions are requested and if you've granted access to the permission or not. ");
+                            break;
+                    }
+        }
+
+            toRelay.append("The phone has adopted a number of security measures to protect your privacy and data. ").append("\n").append("\n");
+        if(passwordRequired){
+            toRelay.append("Your data will be stored on at least a password protected 128-bit encryption.");
+        }
+        toRelay.append("You can delete all the data that hasn't been relayed to a researcher by simply uninstalling the app. The data will only be relayed once you press email and send the email that is generated with the data attached.");
+
+        return toRelay;
+    }
 }

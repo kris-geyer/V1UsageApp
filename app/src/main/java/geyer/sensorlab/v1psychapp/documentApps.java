@@ -25,20 +25,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class documentApps extends AsyncTask<Object, Integer, Boolean> {
+public class documentApps extends AsyncTask<Object, Integer, Integer> {
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
     @Override
-    protected Boolean doInBackground(Object... objects) {
+    protected Integer doInBackground(Object... objects) {
         initializeObjects(objects);
         insertAppsAndPermissions(recordInstalledApps());
-        return fileExists(Constants.APPS_AND_PERMISSIONS_FILE);
+        if(fileExists(Constants.APPS_AND_PERMISSIONS_FILE)){
+            return 1;
+        }else{
+            return 2;
+        }
     }
 
     private Context mContextApps;
     private SharedPreferences appPrefs;
     private SharedPreferences.Editor appEditor;
     private MainActivity mainActivityContext;
-    private final static String TAG = "docApp";
 
     private PackageManager pm;
     // you may separate this or combined to caller class.
@@ -185,8 +188,8 @@ public class documentApps extends AsyncTask<Object, Integer, Boolean> {
     }
 
     @Override
-    protected void onPostExecute(Boolean aBoolean) {
-        super.onPostExecute(aBoolean);
-        delegate.processFinish(aBoolean);
+    protected void onPostExecute(Integer integer) {
+        super.onPostExecute(integer);
+        delegate.processFinish(integer);
     }
 }
