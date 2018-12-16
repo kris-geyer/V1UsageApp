@@ -66,12 +66,12 @@ public class logger extends Service {
                 assert manager != null;
                 manager.createNotificationChannel(notificationChannel);
 
-                Bitmap icon = BitmapFactory.decodeResource(getResources(), R.drawable.ic_background_logging);
+                Bitmap icon = BitmapFactory.decodeResource(getResources(), R.drawable.ic_background_logger);
                 Notification notification = new Notification.Builder(getApplicationContext())
                         .setChannelId(CHANNEL_ONE_ID)
                         .setContentTitle("Recording data")
-                        .setContentText("PsychApps is logging data")
-                        .setSmallIcon(R.drawable.ic_background_logging)
+                        .setContentText("activity logger is collecting data")
+                        .setSmallIcon(R.drawable.ic_background_logger)
                         .setLargeIcon(icon)
                         .build();
 
@@ -91,7 +91,7 @@ public class logger extends Service {
 
             Notification notification = new NotificationCompat.Builder(this)
                     .setContentTitle("Recording data")
-                    .setContentText("app is logging data")
+                    .setContentText("activity logger is collecting data")
                     .setContentIntent(pendingIntent).build();
 
             startForeground(101, notification);
@@ -104,10 +104,9 @@ public class logger extends Service {
                 new Intent(this, MainActivity.class), 0);
 
         return new NotificationCompat.Builder(this)
-                .setContentTitle("Activity log")
-                .setTicker("Ticker")
-                .setContentText("data recording a is on going")
-                .setSmallIcon(R.drawable.ic_background_logging)
+                .setContentTitle("Recording data")
+                .setContentText("activity logger is collecting data")
+                .setSmallIcon(R.drawable.ic_background_logger)
                 .setContentIntent(pendingIntent)
                 .setOngoing(true).build();
     }
@@ -164,18 +163,19 @@ public class logger extends Service {
     }
 
     private void informMain(String message, boolean error) {
-        if(!error){
-            Intent intent = new Intent("changeInService");
-            intent.putExtra("dataToReceive", true);
-            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
-            Log.i("service", "data sent to main");
-        }else {
-            Intent intent = new Intent("changeInService");
-            intent.putExtra("dataToDisplay", true);
-            intent.putExtra("dataToRelay", "error detected: " + message);
-            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
-            Log.i("service", "data sent to main");
-
+        if(prefs.getBoolean("main in foreground",true)){
+            if(!error){
+                Intent intent = new Intent("changeInService");
+                intent.putExtra("dataToReceive", true);
+                LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+                Log.i("service", "data sent to main");
+            }else {
+                Intent intent = new Intent("changeInService");
+                intent.putExtra("dataToDisplay", true);
+                intent.putExtra("dataToRelay", "error detected: " + message);
+                LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+                Log.i("service", "data sent to main");
+            }
         }
     }
 

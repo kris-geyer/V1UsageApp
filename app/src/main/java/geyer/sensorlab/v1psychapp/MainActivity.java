@@ -24,6 +24,8 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import net.sqlcipher.database.SQLiteDatabase;
+
 import java.io.File;
 import java.util.ArrayList;
 
@@ -39,57 +41,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     SharedPreferences prefs;
     SharedPreferences.Editor editor;
 
+    private static final String TAG = "MAIN";
+
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initializeServiceStateListener();
-        initializeComponents();
+        initializeInvisibleComponents();
         initializeClasses();
-        initializeButton();
-        dai.directState(dai.detectState());
+        initializeVisibleComponents();
+
+        //direct action
+        promptAction(dai.detectState());
     }
 
-    private void initializeComponents() {
-        prefs = getSharedPreferences("app initialization prefs", MODE_PRIVATE);
-        editor = prefs.edit();
-        editor.apply();
-    }
-
-    private void initializeButton() {
-        progressBar = findViewById(R.id.pb);
-        Button request = findViewById(R.id.btnRequest);
-        request.setOnClickListener(this);
-        Button email = findViewById(R.id.btnEmail);
-        email.setOnClickListener(this);
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
-    private void initializeClasses() {
-        dai = new DirectApplicationInitialization(
-                false,
-                false,
-                false,
-                false,
-                true,
-                1,
-                false,
-                2,
-                false,
-                0,
-                prefs,
-                getSystemService(Context.APP_OPS_SERVICE),
-                getSystemService(Context.ACTIVITY_SERVICE),
-                getPackageName(),
-                this
-        );
-        prANDcsa = new PermissionRequestsAndCrossSectionalAnalysis(this);
-        docApps = new documentApps(this);
-    }
-
-    //this sets up some architecture in the code that will listen for significant signals from the background logging
-    //this will indicate that the data collection is functioning or there is a problem, in a way that the participant can be informed
     private void initializeServiceStateListener() {
 
         localListener = new BroadcastReceiver() {
@@ -112,6 +79,89 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         LocalBroadcastManager.getInstance(MainActivity.this).registerReceiver(localListener, new IntentFilter("changeInService"));
     }
 
+    private void initializeInvisibleComponents() {
+        SQLiteDatabase.loadLibs(this);
+        prefs = getSharedPreferences("app initialization prefs", MODE_PRIVATE);
+        editor = prefs.edit();
+        editor.putBoolean("main in foreground", true).apply();
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    private void initializeClasses() {
+        //initializes the class tasked with detecting the stage of the application initialization.
+        //Researcher at this point has to determine how the app will function. See mark up
+        dai = new DirectApplicationInitialization(
+                //is the app required to informed the user?
+                true,
+                //is the app required to prompt the user to provide password?
+                /**
+                 * If the researcher wishes to have the encryption of data then a password is required.
+                 * Only edit this option if an alternative to the user providing the password is supplied.
+                 *
+                 * Please anticipate extensive problems with the functionality of the app if this option is not set to true
+                 */
+                true,
+                //is the app required to prompt the participant to provides usage permission?
+                false,
+                //is the app required to request permission to listen to notifications?
+                false,
+                //is the app required to log previous events
+                false,
+                //is the app required that the app performs a cross sectional analysis?
+                false,
+                //is the app required to log data prospectively?
+                true,
+                /**
+                 * Direction for the usage statics
+                 */
+                //is the app required to record usage statistics? Usage statistics documents the duration that an application was employed for a specific period.
+                false,
+                //how many days back should the usage statistics start to record the data?
+                0,
+                //what size of the bins should be developed for the duration of the apps?
+                0,
+                //should usage events be document? These are highly detailed accounts of what the smartphone was used for
+                false,
+                //How many days back should the app document usage events? The records for usage events is not held for a long period of time, so it is unlikely that the results will return more than a weeks worth of data.
+                0,
+                /*
+                what level of the sophistication will the app engage with?
+                0 - nothing
+                1 - document apps
+                2 - document apps and permissions
+                3 - document apps and permissions and user's response to permissions
+                (performCrossSectionalAnalysis required to be true for function)
+                */
+                0,
+                /*
+                What is the level of the prospective data required?
+                1 - basic screen usage
+                2 - foreground logging
+                3 - notification listening
+                4 - foreground and notification listening
+                 */
+                /**
+                 * If the level is above 1 then the app requires the usage statistics permission, notification listening permission or both.
+                 * This will need to be done manually!!!
+                 */
+                1,
+                //requirements for the class to operate
+                getSystemService(Context.APP_OPS_SERVICE),
+                getSystemService(Context.ACTIVITY_SERVICE),
+                getPackageName(),
+                this
+        );
+        prANDcsa = new PermissionRequestsAndCrossSectionalAnalysis(this);
+        docApps = new documentApps(this);
+    }
+
+    private void initializeVisibleComponents() {
+        progressBar = findViewById(R.id.pb);
+        Button request = findViewById(R.id.btnRequest);
+        request.setOnClickListener(this);
+        Button email = findViewById(R.id.btnEmail);
+        email.setOnClickListener(this);
+    }
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
@@ -121,7 +171,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 promptAction(dai.detectState());
                 break;
             case R.id.btnEmail:
-                sendEmail();
+                packageSQLdata makePkg = new packageSQLdata(this);
+                makePkg.execute(this);
                 break;
         }
     }
@@ -133,11 +184,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //getting directory for internal files
         String directory = (String.valueOf(this.getFilesDir()) + File.separator);
         Log.i("Directory", directory);
+        File directoryPath = new File(directory);
+        File[] filesInDirectory = directoryPath.listFiles();
+        Log.d("Files", "Size: "+ filesInDirectory.length);
+        for (File file : filesInDirectory) {
+            Log.d("Files", "FileName:" + file.getName());
+        }
 
         //initializing files reference
         File appDocumented = new File(directory + File.separator + Constants.APPS_AND_PERMISSIONS_FILE),
 
-                pastUsage = new File(directory + File.separator + Constants.PAST_USAGE_FILE);
+                screenUsage = new File(directory + File.separator + Constants.SCREEN_USAGE_FILE);
 
         //list of files to be uploaded
         ArrayList<Uri> files = new ArrayList<>();
@@ -148,11 +205,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 files.add(FileProvider.getUriForFile(this, "geyer.sensorlab.v1psychapp.fileprovider", appDocumented));
             }
 
-            if(pastUsage.exists()){
-                files.add(FileProvider.getUriForFile(this, "geyer.sensorlab.v1psychapp.fileprovider", pastUsage));
+            if(screenUsage.exists()){
+                files.add(FileProvider.getUriForFile(this, "geyer.sensorlab.v1psychapp.fileprovider", screenUsage));
             }
 
-            if(files.size() >0){
+            if(files.size()>0){
                 //adds the file to the intent to send multiple data points
                 intent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, files);
                 intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -175,16 +232,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case 1:
                 informUser();
                 break;
-                /*
-                document apps
+
+                //document apps
             case 3:
-                docApps.execute(getApplicationContext(), this);
+                docApps.execute(getApplicationContext(), this, dai.returnAppDirectionValue("current"));
                 break;
-                */
+
             case 2:
                 requestPassword();
                 break;
             case 7:
+                Log.i(TAG, "call to start logging background data");
                 startLoggingData();
                 break;
             case 11:
@@ -267,16 +325,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
     private void informServiceIsRunning() {
-
+        Toast.makeText(this, "data logging is underway", Toast.LENGTH_LONG).show();
     }
 
+    /**
+     * What happens when the asynch tasks are completed
+     * 1 - 2: results regarding the documenting of apps & permissions
+     * 1 - success
+     * 2 - failure
+     * 3 - 4: results regarding the packaging of the SQL cypher screen usage/app usage database
+     * 3 - success
+     * 4 - failure
+     */
 
+
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
     public void processFinish(Integer output) {
         switch (output){
             //log finished documenting apps
             case 1:
-
+                promptAction(dai.detectState());
                 break;
             //problem logging apps
             case 2:
@@ -284,12 +353,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             //finished packaging screen logging successfully
             case 3:
-
+                sendEmail();
                 break;
             //failed to package screen logging data
             case 4:
-
+                Toast.makeText(this, "Problem uploading screen logging data", Toast.LENGTH_LONG).show();
+                Log.i(TAG, "Problem uploading screen logging data");
                 break;
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.i(TAG, "CLOSED");
+        editor.putBoolean("main in foreground", false).apply();
     }
 }

@@ -3,12 +3,15 @@ package geyer.sensorlab.v1psychapp;
 import android.app.ActivityManager;
 import android.app.AppOpsManager;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Process;
 import android.provider.Settings;
 import android.support.annotation.RequiresApi;
 import android.util.Log;
+
+import org.spongycastle.util.Pack;
 
 import java.io.File;
 
@@ -23,12 +26,16 @@ class DirectApplicationInitialization {
             requestNotificationPermission,
             performCrossSectionalAnalysis,
             prospectiveLoggingEmployed,
-            retrospectiveLoggingEmployed;
+            retrospectiveLoggingEmployed,
+            useUsageStatistics,
+            useUsageEvents;
 
 
     private int levelOfCrossSectionalAnalysis,
             levelOfProspectiveLogging,
-            levelOfRetrospectiveAnalysis;
+            numberOfDaysForUsageStats,
+            intervalOfDaysGenerated,
+            numberOfDaysForUsageEvents;
 
     private SharedPreferences sharedPreferences;
     private SharedPreferences.Editor editor;
@@ -40,30 +47,82 @@ class DirectApplicationInitialization {
     private MainActivity mainActivityContext;
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
-    DirectApplicationInitialization(Boolean InformUserRequired, Boolean PasswordRequired, Boolean RequestUsagePermission, Boolean RequestNotificationPermission,
-                                    Boolean PerformCrossSectionalAnalysis, int LevelOfCrossSectionalAnalysis, Boolean ProspectiveLoggingEmployed, int LevelOfProspectiveLogging,
-                                    Boolean RetrospectiveLoggingEmployed, int LevelOfRetrospectiveAnalysis,
-                                    SharedPreferences sharedPreferencesFromMain, Object systemService1, Object o, Object systemService, MainActivity mainActivity) {
+    DirectApplicationInitialization(
+            //basic initialization direction
+            Boolean InformUserRequired, Boolean PasswordRequired,
+            //permission requisition directions
+            Boolean RequestUsagePermission, Boolean RequestNotificationPermission,
+            //direction of temporal focus for behavioural logging
+            Boolean RetrospectiveLoggingEmployed, Boolean PerformCrossSectionalAnalysis, Boolean ProspectiveLoggingEmployed,
+            //direction for the retrospective logging
+                //direction for usage statistics
+                Boolean UseUsageStatics , int NumberOfDaysForUsageStats, int IntervalOfDaysGenerated,
+                //directions for the usage events
+                Boolean UseUsageEvents, int NumberOfDaysForUsageEvents,
+            //direction for cross sectional logging
+            int LevelOfCrossSectionalAnalysis,
+            //direction for prospective logging
+            int LevelOfProspectiveLogging,
+            //components required from the activity
+             Object AppOpsService, Object ActivityService, String PackageName, MainActivity MainActivityContext
+        )
+    {
+        /**
+         * initialization of the values
+         */
         informUserRequired = InformUserRequired;
         passwordRequired = PasswordRequired;
-        requestUsagePermission = RequestUsagePermission;
-        requestNotificationPermission = RequestNotificationPermission;
+        /**
+         * If data being requested is beyond the capabilities of the data generated then it will be altered
+         */
+        if(ProspectiveLoggingEmployed){
+            switch (LevelOfProspectiveLogging){
+                case 1:
+                    requestUsagePermission = RequestUsagePermission;
+                    requestNotificationPermission = RequestNotificationPermission;
+                    break;
+                case 2:
+                    requestUsagePermission = true;
+                    requestNotificationPermission = RequestNotificationPermission;
+                    break;
+                case 3:
+                    requestUsagePermission = RequestUsagePermission;
+                    requestNotificationPermission = true;
+                    break;
+                case 4:
+                    requestUsagePermission = true;
+                    requestNotificationPermission = true;
+                    break;
+            }
+        }else{
+            requestUsagePermission = RequestUsagePermission;
+            requestNotificationPermission = RequestNotificationPermission;
+        }
+
         performCrossSectionalAnalysis = PerformCrossSectionalAnalysis;
         levelOfCrossSectionalAnalysis = LevelOfCrossSectionalAnalysis;
         prospectiveLoggingEmployed = ProspectiveLoggingEmployed;
         levelOfProspectiveLogging = LevelOfProspectiveLogging;
         retrospectiveLoggingEmployed = RetrospectiveLoggingEmployed;
-        levelOfRetrospectiveAnalysis = LevelOfRetrospectiveAnalysis;
+        if(retrospectiveLoggingEmployed){
+            requestUsagePermission = true;
+        }
 
-        sharedPreferences = sharedPreferencesFromMain;
+        useUsageStatistics = UseUsageStatics;
+        numberOfDaysForUsageStats = NumberOfDaysForUsageStats;
+        intervalOfDaysGenerated = IntervalOfDaysGenerated;
+
+        useUsageEvents = UseUsageEvents;
+        numberOfDaysForUsageEvents = NumberOfDaysForUsageEvents;
+
+        appOpsManager= (AppOpsManager) AppOpsService;
+        manager = (ActivityManager) ActivityService;
+        pkg = PackageName;
+        mainActivityContext = MainActivityContext;
+
+        sharedPreferences = mainActivityContext.getSharedPreferences("app initialization prefs", Context.MODE_PRIVATE);
         editor = sharedPreferences.edit();
         editor.apply();
-
-        appOpsManager= (AppOpsManager) systemService1;
-        manager = (ActivityManager) o;
-        pkg = (String) systemService;
-        mainActivityContext = mainActivity;
-
     }
 
     /**
@@ -196,11 +255,14 @@ class DirectApplicationInitialization {
         return false;
     }
 
-    public void directState(int state) {
+    /**
+     * DIRECTING ACTION
+     */
 
-    }
 
-
+    /*
+    WILL NEED TO IDENTIFY WHAT IS REQUIRED FOR DIFFERENT LEVELS OF ANALYSIS
+     */
     public StringBuilder buildMessageToInformUser() {
         StringBuilder toRelay = new StringBuilder();
         toRelay.append("This app is intended to relay information about how much you use this smartphone" +"\n").
@@ -245,5 +307,16 @@ class DirectApplicationInitialization {
         toRelay.append("You can delete all the data that hasn't been relayed to a researcher by simply uninstalling the app. The data will only be relayed once you press email and send the email that is generated with the data attached.");
 
         return toRelay;
+    }
+
+    public int returnAppDirectionValue(String temporalTarget){
+        switch (temporalTarget){
+            case "current":
+                return levelOfCrossSectionalAnalysis;
+            case "prospective":
+                return levelOfProspectiveLogging;
+            default:
+                return 100;
+        }
     }
 }

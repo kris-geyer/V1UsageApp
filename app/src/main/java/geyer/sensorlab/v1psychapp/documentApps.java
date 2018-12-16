@@ -42,6 +42,7 @@ public class documentApps extends AsyncTask<Object, Integer, Integer> {
     private SharedPreferences appPrefs;
     private SharedPreferences.Editor appEditor;
     private MainActivity mainActivityContext;
+    private int levelOfAnalysis;
 
     private PackageManager pm;
     // you may separate this or combined to caller class.
@@ -62,6 +63,7 @@ public class documentApps extends AsyncTask<Object, Integer, Integer> {
         mContextApps = (Context) objects[0];
         appPrefs = mContextApps.getSharedPreferences("app initialization prefs",Context.MODE_PRIVATE);
         mainActivityContext = (MainActivity) objects[1];
+        levelOfAnalysis = (Integer) objects[2];
         appEditor = appPrefs.edit();
         appEditor.apply();
     }
@@ -84,17 +86,29 @@ public class documentApps extends AsyncTask<Object, Integer, Integer> {
             String[] reqPermission = pInfo.requestedPermissions;
             int[] reqPermissionFlag = pInfo.requestedPermissionsFlags;
 
-            ArrayList<String> permissions = new ArrayList<>();
-            if (reqPermission != null){
-                for (int i = 0; i < reqPermission.length; i++){
-                    String tempPermission = reqPermission[i];
-                    int tempPermissionFlag = reqPermissionFlag[i];
-                    boolean approved = tempPermissionFlag == 3;
-                    permissions.add("*&^"+tempPermission + " - " + approved);
+            if(levelOfAnalysis > 2){
+                ArrayList<String> permissions = new ArrayList<>();
+                if (reqPermission != null){
+                    for (int i = 0; i < reqPermission.length; i++){
+                        String tempPermission = reqPermission[i];
+                        int tempPermissionFlag = reqPermissionFlag[i];
+                        boolean approved = tempPermissionFlag == 3;
+                        permissions.add("*&^"+tempPermission + " - " + approved);
+                    }
                 }
+                Log.i("app", (String) pInfo.applicationInfo.loadLabel(pm));
+                appPermissions.put("!@€"+pInfo.applicationInfo.loadLabel(pm), permissions);
+            }else{
+                ArrayList<String> permissions = new ArrayList<>();
+                if (reqPermission != null){
+                    for (int i = 0; i < reqPermission.length; i++){
+                        String tempPermission = reqPermission[i];
+                        permissions.add("*&^"+tempPermission);
+                    }
+                }
+                Log.i("app", (String) pInfo.applicationInfo.loadLabel(pm));
+                appPermissions.put("!@€"+pInfo.applicationInfo.loadLabel(pm), permissions);
             }
-            Log.i("app", (String) pInfo.applicationInfo.loadLabel(pm));
-            appPermissions.put("!@€"+pInfo.applicationInfo.loadLabel(pm), permissions);
         }
         return appPermissions;
     }
@@ -131,18 +145,47 @@ public class documentApps extends AsyncTask<Object, Integer, Integer> {
         //attempts to add the columns
         try {
             int count = 0;
-            for (Map.Entry<String, ArrayList> item : stringArrayListHashMap.entrySet()) {
-                String key = item.getKey();
-                pushAppIntoPrefs(key);
-                table.addCell("£$$"+key);
-                ArrayList value = item.getValue();
-                for (int i = 0; i < value.size(); i++){
-                    table.addCell("$££"+value.get(i));
-                }
-                count++;
-                int currentProgress = (count * 100) / stringArrayListHashMap.size();
-                publishProgress(currentProgress);
+            switch(levelOfAnalysis){
+                case 1:
+                    for (Map.Entry<String, ArrayList> item : stringArrayListHashMap.entrySet()) {
+                        String key = item.getKey();
+                        pushAppIntoPrefs(key);
+                        table.addCell("£$$"+key);
+                        count++;
+                        int currentProgress = (count * 100) / stringArrayListHashMap.size();
+                        publishProgress(currentProgress);
+                    }
+                    break;
+                case 2:
+                    for (Map.Entry<String, ArrayList> item : stringArrayListHashMap.entrySet()) {
+                        String key = item.getKey();
+                        pushAppIntoPrefs(key);
+                        table.addCell("£$$"+key);
+                        ArrayList value = item.getValue();
+                        for (int i = 0; i < value.size(); i++){
+                            table.addCell("$££"+value.get(i));
+                        }
+                        count++;
+                        int currentProgress = (count * 100) / stringArrayListHashMap.size();
+                        publishProgress(currentProgress);
+                    }
+                    break;
+                case 3:
+                    for (Map.Entry<String, ArrayList> item : stringArrayListHashMap.entrySet()) {
+                        String key = item.getKey();
+                        pushAppIntoPrefs(key);
+                        table.addCell("£$$"+key);
+                        ArrayList value = item.getValue();
+                        for (int i = 0; i < value.size(); i++){
+                            table.addCell("$££"+value.get(i));
+                        }
+                        count++;
+                        int currentProgress = (count * 100) / stringArrayListHashMap.size();
+                        publishProgress(currentProgress);
+                    }
+                    break;
             }
+
 
         } catch (Exception e) {
             Log.e("file construct", "error " + e);

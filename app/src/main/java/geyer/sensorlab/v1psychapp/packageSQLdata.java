@@ -53,6 +53,7 @@ public class packageSQLdata extends AsyncTask<Object, Integer, Integer> {
     private void initializeComponents(Object[] objects) {
         mContext = (Context) objects[0];
         prefs =  mContext.getSharedPreferences("app initialization prefs", Context.MODE_PRIVATE);
+        SQLiteDatabase.loadLibs(mContext);
     }
 
     private void packageBackgroundLoggingSQL() {
@@ -101,6 +102,7 @@ public class packageSQLdata extends AsyncTask<Object, Integer, Integer> {
         if(rowLength > 0){
             try {
                 for (c.moveToFirst(); !c.isAfterLast(); c.moveToNext()) {
+                    Log.i("pkgSQL", "event: " + event);
                     table.addCell(c.getString(event));
                     table.addCell(String.valueOf(c.getLong(time)));
                     if (c.getCount() != 0) {
